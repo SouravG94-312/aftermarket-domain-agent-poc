@@ -5,7 +5,7 @@ This codebase implements a local chatbot with:
 - Warranty Agent connected to a custom MCP server
 - Service Agent connected to a custom MCP server
 - Parts Agent connected to a custom MCP server
-- Supervisor Agent with routing logic
+- Supervisor Agent with single-agent routing and multi-agent planning
 - Local A2A-style protocol between Supervisor and specialist agents
 - GPT-5.5 reasoning over MCP context packs using the OpenAI API
 - Conversation memory for multi-turn follow-up
@@ -25,15 +25,19 @@ Flask Backend
   v
 Supervisor Agent
   |
-  | A2A local JSON message
-  |------------------------------
-  |              |              |
-Warranty Agent  Service Agent  Parts Agent
-  |              |              |
-  ------------ Custom MCP Bridge ------------
-                  |
-                  v
-        Local MCP Server over stdio
+  | creates an execution plan
+  v
+Multi-Agent Planner
+  |
+  | A2A local JSON messages
+  |------------------------------------------------
+  |              |              |                 |
+Warranty Agent  Service Agent  Parts Agent  Deep Reasoning Agent
+  |              |              |                 |
+  ------------ Custom MCP Bridge ------------     |
+                  |                              |
+                  v                              v
+        Local MCP Server over stdio       GPT-5.5 / fallback reasoning
                   |
                   v
        Databricks SQL Warehouse
@@ -239,16 +243,40 @@ Show the evidence used for this answer.
 
 The last two questions validate multi-turn memory and follow-up routing.
 
-## 11. How Routing Works
+## 11. How Routing and Multi-Agent Planning Works
 
-The Supervisor Agent extracts entities from the user query:
+The Supervisor Agent now behaves as a planner, not just a one-agent router.
+
+For simple questions, it preserves the existing single-agent behavior:
 
 - `WC1001` -> claim ID -> Warranty Agent
 - `VINDEF000123` -> VIN -> Service Agent
 - `P001` -> part number -> Parts Agent
 - `DLR003` -> dealer ID -> Deep Reasoning Agent
 
-It then creates an A2A message envelope:
+For questions that require multiple evidence sources, the Supervisor creates an execution plan and sends A2A messages to multiple specialist agents.
+
+Example user question:
+
+```text
+Claim WC1001 is related to VINDEF000123. Check the claim status and service history, then tell me if this looks like a repeat repair issue.
+```
+
+Expected plan:
+
+```json
+{
+  "query_type": "multi_agent_analysis",
+  "required_agents": ["warranty", "service", "deep_reasoning"],
+  "execution_steps": [
+    {"agent": "warranty", "tool": "get_warranty_claim_details"},
+    {"agent": "service", "tool": "get_vehicle_service_history"},
+    {"agent": "deep_reasoning", "task": "multi_agent_evidence_synthesis"}
+  ]
+}
+```
+
+A2A message envelope example:
 
 ```json
 {
@@ -258,11 +286,21 @@ It then creates an A2A message envelope:
   "task": "warranty_claim_lookup",
   "user_query": "Why was claim WC1001 rejected?",
   "entities": {"claim_id": "WC1001"},
-  "memory": []
+  "memory": [],
+  "payload": {
+    "routing_reason": "Claim or warranty evidence is required."
+  }
 }
 ```
 
-The specialist agent calls the custom MCP server, receives Databricks-backed evidence, and passes it to GPT-5.5 for reasoning.
+The specialist agents call the custom MCP server and return Databricks-backed evidence. The Deep Reasoning Agent receives the combined evidence bundle and produces the final answer using GPT-5.5 when configured, or deterministic fallback reasoning when running in mock mode.
+
+The API response includes both:
+
+- `trace.multi_agent_plan`
+- `agent_flow`
+
+The frontend renders this as an Agent Communication Flow panel. LangSmith also shows the nested flow as `chat_request -> supervisor_chat -> supervisor_plan -> A2A -> specialist agents -> MCP -> deep reasoning`.
 
 ## 12. GPT-5.5 Reasoning
 
@@ -397,3 +435,56 @@ Recommended production changes:
 - LangSmith or OpenTelemetry observability
 - Databricks secrets instead of `.env`
 - Proper A2A transport over HTTP/SSE or official A2A runtime
+
+
+## LangSmith Observability
+
+This version includes optional LangSmith tracing for the agent communication flow. The existing agent, MCP, routing, and reasoning logic is unchanged; tracing wraps the logical functions only when enabled.
+
+### Enable LangSmith
+
+Add these values to `backend/.env`:
+
+```env
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=your-langsmith-api-key
+LANGSMITH_PROJECT=aftermarket-agent-cluster-poc
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+```
+
+Then start the backend as usual:
+
+```powershell
+cd backend
+$env:PYTHONPATH="."
+$env:MOCK_MCP="true"
+python app.py
+```
+
+For Databricks-backed MCP mode, set `MOCK_MCP=false` and configure the MCP server `.env` as before.
+
+### Trace structure
+
+Each chat request creates a parent trace named `chat_request`. You should see child runs like:
+
+```text
+chat_request
+ ├── supervisor_chat
+ ├── memory_get_or_create
+ ├── entity_extraction
+ ├── supervisor_route
+ ├── a2a_create_message
+ ├── warranty_agent_run / service_agent_run / parts_agent_run / deep_reasoning_agent_run
+ ├── mcp_tool_call
+ ├── reason_over_evidence
+ ├── deep_reasoning_with_gpt_5_5 or fallback_reasoning
+ └── final_response_mapping
+```
+
+### UI agent flow
+
+The backend now returns `agent_flow` in the chat API response and also inside `trace.agent_flow`. The frontend renders this in a collapsible **Agent communication flow** section below each assistant response. This is useful for demos even when LangSmith is not open.
+
+### Security note
+
+The tracing helper redacts common secret fields such as API keys, tokens, passwords, and client secrets before sending payloads into traces. Do not paste real secrets into chat questions or commit `.env` files.
