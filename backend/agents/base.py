@@ -38,6 +38,11 @@ class BaseAgent:
         }
 
     def _rows_from_evidence(self, evidence: dict[str, Any]) -> list[dict[str, Any]]:
+        if isinstance(evidence.get("dealer_360"), dict):
+            # Dealer 360 questions should show the dealer-level row first.
+            # Previously context-pack responses could show only the warranty trend
+            # table because recent_warranty_performance appeared before dealer_360.
+            return [evidence["dealer_360"]]
         if isinstance(evidence.get("locations"), list):
             return evidence["locations"][:10]
         if isinstance(evidence.get("recent_events"), list):
@@ -46,8 +51,6 @@ class BaseAgent:
             return evidence["recent_warranty_performance"][:10]
         if isinstance(evidence.get("claim"), dict):
             return [evidence["claim"]]
-        if isinstance(evidence.get("dealer_360"), dict):
-            return [evidence["dealer_360"]]
         return []
 
     def suggested_questions(self, message: A2AMessage, evidence: dict[str, Any]) -> list[str]:

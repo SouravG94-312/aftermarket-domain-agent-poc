@@ -31,6 +31,23 @@ def run_basic_routing_test():
     print("Basic routing test passed.")
 
 
+def run_dealer_360_context_pack_test():
+    app = create_app()
+    client = app.test_client()
+    question = "Give me a 360 summary of dealer DLR003."
+    response = client.post("/api/v1/chat", json={"question": question})
+    assert response.status_code == 200, response.text
+    data = response.get_json()
+    assert data["trace"]["selected_agent"] == "Deep Reasoning Agent", data["trace"]
+    assert data["trace"].get("selected_agents") == ["deep_reasoning"], data["trace"]
+    assert data["trace"].get("agent_result_keys") == ["deep_reasoning"], data["trace"]
+    assert data["table"]["rows"], "Dealer 360 should return a table row from the MCP context pack."
+    assert data["table"]["rows"][0].get("dealer_id") == "DLR003", data["table"]["rows"]
+    assert any(step.get("action") == "mcp_context_pack_lookup" for step in data.get("agent_flow", [])), data.get("agent_flow")
+    assert "DLR003" in data["summary"] or "dealer" in data["summary"].lower(), data["summary"]
+    print("Dealer 360 context-pack test passed.")
+
+
 def run_multi_agent_planning_test():
     app = create_app()
     client = app.test_client()
@@ -52,4 +69,5 @@ def run_multi_agent_planning_test():
 
 if __name__ == "__main__":
     run_basic_routing_test()
+    run_dealer_360_context_pack_test()
     run_multi_agent_planning_test()

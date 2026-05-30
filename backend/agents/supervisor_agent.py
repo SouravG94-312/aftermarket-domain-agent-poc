@@ -87,31 +87,57 @@ class SupervisorAgent:
             flow.append(make_flow_step(step_no, agent.name, "custom_mcp_server", "mcp_tool_call", step.get("tool", task)))
             step_no += 1
 
-        # If plan requires final synthesis, call Deep Reasoning Agent with the
-        # combined evidence bundle. This avoids the earlier behavior where a
-        # claim+VIN question stopped after Warranty Agent only.
+        # Execute Deep Reasoning in the correct mode:
+        # 1) If specialist agents already produced evidence, send an evidence_bundle
+        #    for cross-agent synthesis.
+        # 2) If Deep Reasoning is the only required agent, DO NOT send an empty
+        #    evidence_bundle. Let DeepReasoningAgent call the MCP tool
+        #    generate_aftermarket_context_pack(entity_type, entity_id).
+        #
+        # This fixes the dealer 360 issue where the supervisor previously created
+        # an empty evidence bundle for dealer-only questions and therefore skipped
+        # the MCP context-pack lookup.
         if "deep_reasoning" in plan.get("required_agents", []):
             deep_agent = self.agents["deep_reasoning"]
-            evidence_bundle = self._build_evidence_bundle(question, entities, plan, agent_results)
+
+            deep_step = next((s for s in execution_steps if s.get("agent") == "deep_reasoning"), {})
+            has_specialist_evidence = bool(agent_results)
+            is_context_pack_lookup = deep_step.get("tool") == "generate_aftermarket_context_pack"
+
+            if has_specialist_evidence:
+                task = "multi_agent_evidence_synthesis"
+                payload = {
+                    "routing_reason": "Final answer requires synthesis across specialist agent evidence.",
+                    "plan_id": plan.get("plan_id"),
+                    "evidence_bundle": self._build_evidence_bundle(question, entities, plan, agent_results),
+                }
+                flow_detail = "combined warranty/service/parts/context evidence"
+                flow_action = "synthesize_multi_agent_evidence"
+            else:
+                task = deep_step.get("task", "aftermarket_context_reasoning")
+                payload = {
+                    "routing_reason": deep_step.get("reason", "Context-pack lookup required by supervisor plan."),
+                    "plan_id": plan.get("plan_id"),
+                    "execution_step": safe_trace_payload(deep_step),
+                }
+                flow_detail = deep_step.get("tool", "generate_aftermarket_context_pack") if is_context_pack_lookup else task
+                flow_action = "mcp_context_pack_lookup" if is_context_pack_lookup else "deep_reasoning_lookup"
+
             synthesis_message = A2AMessage.create(
                 from_agent=self.name,
                 to_agent=deep_agent.name,
-                task="multi_agent_evidence_synthesis",
+                task=task,
                 user_query=question,
                 session_id=state.session_id,
                 entities=entities,
                 memory=memory.recent_messages(state.session_id, limit=8),
-                payload={
-                    "routing_reason": "Final answer requires synthesis across specialist agent evidence.",
-                    "plan_id": plan.get("plan_id"),
-                    "evidence_bundle": evidence_bundle,
-                },
+                payload=payload,
             )
             flow.append(make_flow_step(step_no, self.name, deep_agent.name, "a2a_send_message", synthesis_message.message_id))
             step_no += 1
             deep_result = deep_agent.handle(synthesis_message)
             agent_results["deep_reasoning"] = deep_result
-            flow.append(make_flow_step(step_no, deep_agent.name, "gpt-5.5_or_fallback_reasoner", "synthesize_multi_agent_evidence", "combined warranty/service/parts/context evidence"))
+            flow.append(make_flow_step(step_no, deep_agent.name, "custom_mcp_server_or_reasoner", flow_action, flow_detail))
             step_no += 1
 
         # Fallback safety: if the plan somehow produced no result, preserve old route behavior.

@@ -90,6 +90,21 @@ If evidence is incomplete, say what is missing."""
                 lines.append("- Escalate to technical support if repeat service pattern is confirmed.")
             elif parts:
                 lines.append("- Use alternate/reman/transfer option if stock is limited.")
+        elif "dealer_360" in evidence and isinstance(evidence["dealer_360"], dict):
+            dealer = evidence["dealer_360"]
+            lines.append("\nDealer 360 summary:")
+            for k, v in dealer.items():
+                lines.append(f"- {k}: {v}")
+            if evidence.get("recommended_reasoning_focus"):
+                lines.append("\nReasoning focus:")
+                for item in evidence.get("recommended_reasoning_focus", []):
+                    lines.append(f"- {item}")
+            if evidence.get("recent_bonus_records"):
+                lines.append("\nBonus context:")
+                for rec in evidence.get("recent_bonus_records", [])[:3]:
+                    lines.append(f"- {rec}")
+            lines.append("\nRecommended next action:")
+            lines.append("- Review warranty rejection drivers, customer satisfaction gaps, and bonus hurdle failures for this dealer.")
         elif "summary" in evidence and isinstance(evidence["summary"], dict):
             lines.append("\nKey summary:")
             for k, v in evidence["summary"].items():
