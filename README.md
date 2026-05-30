@@ -15,6 +15,8 @@ This codebase implements a local chatbot with:
 
 ## 1. Architecture
 
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/476684c5-691a-450f-ae34-5914772d33c1" />
+
 ```text
 React UI
   |
@@ -488,3 +490,6 @@ The backend now returns `agent_flow` in the chat API response and also inside `t
 ### Security note
 
 The tracing helper redacts common secret fields such as API keys, tokens, passwords, and client secrets before sending payloads into traces. Do not paste real secrets into chat questions or commit `.env` files.
+
+### Example QnA
+
