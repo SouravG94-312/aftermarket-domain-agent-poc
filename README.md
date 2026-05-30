@@ -48,6 +48,9 @@ Warranty Agent  Service Agent  Parts Agent  Deep Reasoning Agent
        Unity Catalog Views / Delta Tables
 ```
 
+**Agent Lifecycle: Multi-Agent Communication Flow**
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/1cf234a4-8eef-4b14-98ec-1ab9756d02fe" />
+
 ## 2. Folder Structure
 
 ```text
@@ -490,6 +493,3 @@ The backend now returns `agent_flow` in the chat API response and also inside `t
 ### Security note
 
 The tracing helper redacts common secret fields such as API keys, tokens, passwords, and client secrets before sending payloads into traces. Do not paste real secrets into chat questions or commit `.env` files.
-
-### Example QnA
-
