@@ -88,7 +88,7 @@ Recommended next action is to collect the missing documents and resubmit with te
 Add screenshot here:
 
 ```markdown
-![Scenario 1 - Warranty Claim UI Output](./docs/screenshots/scenario_1_warranty_claim_ui.png)
+
 ```
 
 #### LangSmith Monitoring and Trace Screenshot
@@ -112,10 +112,10 @@ chat_request
      └── final_response_mapping
 ```
 
-Add screenshot here:
+Scenario 1 - LangSmith Warranty Trace: 
 
 ```markdown
-![Scenario 1 - LangSmith Warranty Trace](./docs/screenshots/scenario_1_warranty_langsmith_trace.png)
+<img width="1582" height="975" alt="image" src="https://github.com/user-attachments/assets/98a1d2da-fd08-4855-b843-3f023c1d9743" />
 ```
 
 ---
