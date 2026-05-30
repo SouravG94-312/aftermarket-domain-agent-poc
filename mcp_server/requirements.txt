@@ -1,0 +1,6 @@
+mcp>=1.10.0
+databricks-sdk>=0.40.0
+databricks-sql-connector>=3.6.0
+python-dotenv>=1.0.1
+pandas>=2.2.0
+uvicorn>=0.30.0
