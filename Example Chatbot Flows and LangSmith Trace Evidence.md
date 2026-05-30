@@ -86,10 +86,7 @@ Recommended next action is to collect the missing documents and resubmit with te
 #### UI Output Screenshot
 
 Add screenshot here:
-
-```markdown
-
-```
+<img width="1818" height="857" alt="image" src="https://github.com/user-attachments/assets/1401594f-f046-475b-b98c-2607642fb873" />
 
 #### LangSmith Monitoring and Trace Screenshot
 
@@ -114,9 +111,8 @@ chat_request
 
 Scenario 1 - LangSmith Warranty Trace: 
 
-```markdown
+
 <img width="1582" height="975" alt="image" src="https://github.com/user-attachments/assets/98a1d2da-fd08-4855-b843-3f023c1d9743" />
-```
 
 ---
 
@@ -191,12 +187,8 @@ Recommended next step is to compare the latest repair event with prior repair or
 ```
 
 #### UI Output Screenshot
-
-Add screenshot here:
-
-```markdown
-![Scenario 2 - Service History UI Output](./docs/screenshots/scenario_2_service_history_ui.png)
-```
+Scenario 2 - Service History UI Output
+<img width="1782" height="753" alt="image" src="https://github.com/user-attachments/assets/a0bff870-4528-4868-88cb-0ae4bc96c878" />
 
 #### LangSmith Monitoring and Trace Screenshot
 
@@ -219,11 +211,8 @@ chat_request
      └── final_response_mapping
 ```
 
-Add screenshot here:
-
-```markdown
-![Scenario 2 - LangSmith Service Trace](./docs/screenshots/scenario_2_service_langsmith_trace.png)
-```
+Scenario 2 - LangSmith Service Trace
+<img width="1586" height="936" alt="image" src="https://github.com/user-attachments/assets/85a029b8-b5c1-487e-84a5-af123874aa42" />
 
 ---
 
@@ -266,7 +255,7 @@ Parts Agent Response
 UI Output
 ```
 
-#### Expected Agent Flow
+#### Agent Flow
 
 ```text
 1. User → Supervisor Agent: received part availability question
@@ -299,17 +288,13 @@ If availability is limited, the dealer should check alternate, remanufactured, o
 ```
 
 #### UI Output Screenshot
+Scenario 3 - Parts Availability UI Output
 
-Add screenshot here:
-
-```markdown
-![Scenario 3 - Parts Availability UI Output](./docs/screenshots/scenario_3_parts_availability_ui.png)
-```
+<img width="1727" height="730" alt="image" src="https://github.com/user-attachments/assets/0497b136-297d-413d-8cf8-0a1790d4a293" />
 
 #### LangSmith Monitoring and Trace Screenshot
 
 Expected LangSmith trace structure:
-
 ```text
 chat_request
  └── supervisor_chat
@@ -326,12 +311,8 @@ chat_request
      ├── memory_update_entities
      └── final_response_mapping
 ```
-
-Add screenshot here:
-
-```markdown
-![Scenario 3 - LangSmith Parts Trace](./docs/screenshots/scenario_3_parts_langsmith_trace.png)
-```
+Scenario 3 - LangSmith Parts Trace
+<img width="1592" height="976" alt="image" src="https://github.com/user-attachments/assets/ae5a6589-3d77-4225-830e-c20b84242658" />
 
 ---
 
@@ -411,31 +392,35 @@ The chatbot should explain:
 - What evidence is missing, if any
 - Recommended next action for claim and service teams
 
-Example answer pattern:
+ Actual Answer:
 
 ```text
-Claim WC1001 is currently rejected and marked high risk.
-The claim evidence shows missing diagnostic log and late submission.
+Answer Yes — **Claim WC1001 for VINDEF000123 looks like a repeat repair issue**.
+The claim is currently Rejected and marked High risk, while the service history shows repeated Powertrain / Power loss events with the same fault code FC-PWR-101.
 
-The service history for VINDEF000123 should be reviewed to identify whether the same fault code, symptom, component, labor operation, or part replacement appears across multiple repair events.
+Evidence **Claim status** - **Claim ID:** WC1001 - **VIN:** VINDEF000123 - **Status:** Rejected - **Dealer:** Berlin Trucks Center / DLR003 - **Risk level:** High - **Rejection reason:** Missing diagnostic log and late submission - **Missing documents:** Diagnostic log, technician notes
+Service history
+- Total service events: 4
+- Distinct fault codes: 2
+- Latest mileage: 132,400 km
+- Symptoms observed: Power loss, warning lamp
+- Repeat issue indicator: True
 
-Based on the combined warranty and service evidence, this does / does not look like a repeat repair issue because ...
+Matching prior repair events
+- RO2001: FC-PWR-101 — Power loss — Powertrain — Priority 1
+- RO1984: FC-PWR-101 — Power loss — Powertrain — Priority 2
 
-Recommended next action:
-1. Attach missing diagnostic log and technician notes.
-2. Compare the latest repair event with previous events for the same VIN.
-3. If the same component or fault code is recurring, escalate to technical support before claim resubmission.
+Missing / incomplete evidence
+- Full repair order details are not provided, including repair dates, parts replaced, technician findings, and confirmation of whether prior repairs resolved the issue.
+
+Recommended Next Action Treat WC1001 as a **repeat repair escalation**. Collect the missing **diagnostic log** and **technician notes**, then resubmit with technical justification referencing prior repair orders **RO2001** and **RO1984** to support the repeat fault pattern.
 ```
 
-#### UI Output Screenshot
+#### UI Output Screenshot - Scenario 4 - Multi-Agent Repeat Repair UI Output
+<img width="1811" height="843" alt="image" src="https://github.com/user-attachments/assets/52155796-fabc-4d39-91fb-0533a62897f0" />
 
-Add screenshot here:
 
-```markdown
-![Scenario 4 - Multi-Agent Repeat Repair UI Output](./docs/screenshots/scenario_4_multi_agent_repeat_repair_ui.png)
-```
-
-#### LangSmith Monitoring and Trace Screenshot
+#### LangSmith Monitoring and Trace Screenshot- Scenario 4 - LangSmith Multi-Agent Trace
 
 Expected LangSmith trace structure:
 
@@ -463,12 +448,7 @@ chat_request
      ├── memory_update_entities
      └── final_response_mapping
 ```
-
-Add screenshot here:
-
-```markdown
-![Scenario 4 - LangSmith Multi-Agent Trace](./docs/screenshots/scenario_4_multi_agent_langsmith_trace.png)
-```
+<img width="1643" height="977" alt="image" src="https://github.com/user-attachments/assets/88d48d94-9cb5-4199-a14a-5b308b6e2619" />
 
 ---
 
@@ -532,16 +512,60 @@ The chatbot should explain:
 - Customer satisfaction or DIMS compliance risk
 - Top recommended actions
 
-Example answer pattern:
+Actual Answer:
 
 ```text
-Dealer DLR003 shows a combination of commercial performance and operational risk.
-The main risk areas are warranty rejection rate, bonus eligibility, and service process compliance.
+Answer
+A full 360 dealer profile for DLR003 is not available from the current evidence. However, the available context shows:
 
-Recommended actions:
-1. Reduce warranty rejection drivers by improving document completeness.
-2. Review service history and repeat repair patterns.
-3. Improve KPI gaps impacting bonus eligibility.
+DLR003 = Berlin Trucks Center, located in Germany-related operations, with:
+- Active involvement in warranty claim WC1001
+- Available stock of part P001
+- A potential documentation/process concern due to a rejected high-risk claim
+
+Overall, DLR003 appears relevant across warranty, service escalation, and parts availability, but a true 360 view is incomplete without dealer performance, claims history, service throughput, customer satisfaction, and financial metrics.
+
+Evidence
+Available evidence for DLR003:
+
+Dealer identity
+- Dealer ID: DLR003
+- Dealer name: Berlin Trucks Center
+
+Warranty / claim context
+- Claim ID: WC1001
+- VIN: VINDEF000123
+- Claim status: Rejected
+- Risk level: High
+- Rejection reason: Missing diagnostic log and late submission
+- Missing documents: Diagnostic log, technician notes
+
+Service / repair context
+- Related VIN VINDEF000123 shows repeat issue indicator: True
+- Repeated issue pattern: Powertrain / Power loss
+- Repeated fault code: FC-PWR-101
+- Prior repair orders referenced: RO2001, RO1984
+
+Parts context
+- Part: P001
+- Market: Germany / DE
+- DLR003 stock: 8 units
+- Lead time: 2 days
+- DLR003 is the preferred source versus DLR007 due to shorter lead time.
+
+Missing evidence for a full 360 dealer summary
+- Dealer location/address and market assignment details
+- Claim volume, approval/rejection rate, and trend
+- Repeat repair rate by dealer
+- Service capacity, cycle time, and technician productivity
+- Parts fill rate, backorder exposure, and inventory performance
+- Customer satisfaction/NPS or complaint history
+- Audit/compliance score
+- Revenue, warranty cost, or goodwill spend
+- Open escalations or field actions tied to DLR003
+
+Recommended Next Action
+Generate or request a complete dealer context pack for DLR003 covering warranty, service, parts, customer, compliance, and financial KPIs. In the meantime, prioritize a review of WC1001 because DLR003 has a rejected high-risk claim with missing diagnostic documentation tied to a repeat repair pattern.
 ```
 
 #### Follow-Up Input Question
@@ -565,21 +589,9 @@ Deep Reasoning Agent
 Final action-oriented answer
 ```
 
-#### UI Output Screenshot
+#### UI Output Screenshot: Scenario 5 - Dealer 360 UI Output
 
-Add screenshot here:
-
-```markdown
-![Scenario 5 - Dealer 360 UI Output](./docs/screenshots/scenario_5_dealer_360_ui.png)
-```
-
-#### Follow-Up UI Output Screenshot
-
-Add screenshot here:
-
-```markdown
-![Scenario 5 - Dealer 360 Follow-Up UI Output](./docs/screenshots/scenario_5_dealer_360_followup_ui.png)
-```
+<img width="1823" height="692" alt="image" src="https://github.com/user-attachments/assets/f6f703d1-841f-4f74-af19-ff0a09442b59" />
 
 #### LangSmith Monitoring and Trace Screenshot
 
@@ -602,70 +614,10 @@ chat_request
      ├── memory_update_entities
      └── final_response_mapping
 ```
+<img width="1443" height="795" alt="image" src="https://github.com/user-attachments/assets/2c9f23bd-c819-4762-9ca4-1e7acd4be72c" />
 
-Add screenshot here:
 
-```markdown
-![Scenario 5 - LangSmith Dealer Trace](./docs/screenshots/scenario_5_dealer_360_langsmith_trace.png)
-```
 
----
 
-### Recommended Screenshot Folder Structure
 
-Create this folder in the repository:
-
-```text
-docs/
-└── screenshots/
-    ├── scenario_1_warranty_claim_ui.png
-    ├── scenario_1_warranty_langsmith_trace.png
-    ├── scenario_2_service_history_ui.png
-    ├── scenario_2_service_langsmith_trace.png
-    ├── scenario_3_parts_availability_ui.png
-    ├── scenario_3_parts_langsmith_trace.png
-    ├── scenario_4_multi_agent_repeat_repair_ui.png
-    ├── scenario_4_multi_agent_langsmith_trace.png
-    ├── scenario_5_dealer_360_ui.png
-    ├── scenario_5_dealer_360_followup_ui.png
-    └── scenario_5_dealer_360_langsmith_trace.png
-```
-
-### How to Capture Screenshots
-
-#### UI screenshot
-
-1. Run backend and frontend.
-2. Open the chatbot UI.
-3. Ask the scenario question.
-4. Capture the answer area, table view, and agent communication flow panel.
-5. Save the image under `docs/screenshots/`.
-
-#### LangSmith screenshot
-
-1. Enable LangSmith tracing.
-2. Ask the scenario question.
-3. Open the LangSmith project.
-4. Open the latest `chat_request` trace.
-5. Expand the waterfall view.
-6. Capture the trace showing Supervisor, A2A, specialist agent, MCP tool, and reasoning calls.
-7. Save the image under `docs/screenshots/`.
-
-### Recommended Demo Evidence Checklist
-
-Use this checklist before presenting the PoC:
-
-```text
-[ ] Scenario 1 UI screenshot captured
-[ ] Scenario 1 LangSmith trace screenshot captured
-[ ] Scenario 2 UI screenshot captured
-[ ] Scenario 2 LangSmith trace screenshot captured
-[ ] Scenario 3 UI screenshot captured
-[ ] Scenario 3 LangSmith trace screenshot captured
-[ ] Scenario 4 UI screenshot captured
-[ ] Scenario 4 LangSmith multi-agent trace screenshot captured
-[ ] Scenario 5 UI screenshot captured
-[ ] Scenario 5 follow-up memory screenshot captured
-[ ] Scenario 5 LangSmith trace screenshot captured
-```
 
