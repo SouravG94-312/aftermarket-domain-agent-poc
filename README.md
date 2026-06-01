@@ -15,7 +15,8 @@ This codebase implements a local chatbot with:
 
 ## 1. Architecture
 
-<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/476684c5-691a-450f-ae34-5914772d33c1" />
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/5ecf4ac6-e0a9-4810-bbb0-e82e8574f95c" />
+
 
 ```text
 React UI
