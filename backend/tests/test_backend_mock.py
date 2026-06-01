@@ -67,7 +67,55 @@ def run_multi_agent_planning_test():
     print("Multi-agent planning test passed:", selected_agents)
 
 
+def run_analytics_agent_test():
+    app = create_app()
+    client = app.test_client()
+    cases = [
+        "Which market has the highest parts revenue?",
+        "Show top 10 dealers by revenue.",
+        "Compare customer satisfaction score by dealer.",
+        "Show monthly revenue trend across all markets.",
+        "Which parts have the highest backorder quantity?",
+        "Compare backorder quantity by market.",
+    ]
+    for question in cases:
+        response = client.post("/api/v1/chat", json={"question": question})
+        assert response.status_code == 200, response.text
+        data = response.get_json()
+        assert data["trace"]["selected_agent"] == "Analytics Agent", data["trace"]
+        assert "analytics" in data["trace"].get("selected_agents", []), data["trace"]
+        assert data["table"]["rows"], f"Analytics question returned no rows: {question}"
+        assert data.get("chart") and data["chart"].get("data"), f"Analytics question returned no chart: {question}"
+        assert any(step.get("to") == "Analytics Agent" for step in data.get("agent_flow", [])), data.get("agent_flow")
+        print(question, "->", data["trace"]["selected_agent"], data["chart"].get("chart_type"))
+    print("Analytics Agent test passed.")
+
+
+def run_analytics_vs_operational_parts_routing_test():
+    app = create_app()
+    client = app.test_client()
+
+    analytics_question = "Which parts have the highest backorder quantity?"
+    response = client.post("/api/v1/chat", json={"question": analytics_question})
+    assert response.status_code == 200, response.text
+    data = response.get_json()
+    assert data["trace"]["selected_agent"] == "Analytics Agent", data["trace"]
+    assert "analytics" in data["trace"].get("selected_agents", []), data["trace"]
+    assert data["table"]["rows"], data
+    assert "backorder" in data["chart"].get("y", [""])[0].lower(), data["chart"]
+
+    operational_question = "Is part P001 available in Germany?"
+    response = client.post("/api/v1/chat", json={"question": operational_question})
+    assert response.status_code == 200, response.text
+    data = response.get_json()
+    assert data["trace"]["selected_agent"] == "Parts Agent", data["trace"]
+    assert "parts" in data["trace"].get("selected_agents", []), data["trace"]
+    print("Analytics vs operational Parts routing test passed.")
+
+
 if __name__ == "__main__":
     run_basic_routing_test()
     run_dealer_360_context_pack_test()
     run_multi_agent_planning_test()
+    run_analytics_agent_test()
+    run_analytics_vs_operational_parts_routing_test()

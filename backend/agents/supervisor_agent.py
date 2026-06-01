@@ -1,10 +1,12 @@
 from __future__ import annotations
+import re
 from typing import Any
 
 from agents.warranty_agent import WarrantyAgent
 from agents.service_agent import ServiceAgent
 from agents.parts_agent import PartsAgent
 from agents.deep_reasoning_agent import DeepReasoningAgent
+from agents.analytics_agent import AnalyticsAgent
 from services.a2a import A2AMessage
 from services.entity_extractor import extract_entities
 from services.memory import memory
@@ -19,6 +21,7 @@ class SupervisorAgent:
             "warranty": WarrantyAgent(),
             "service": ServiceAgent(),
             "parts": PartsAgent(),
+            "analytics": AnalyticsAgent(),
             "deep_reasoning": DeepReasoningAgent(),
         }
 
@@ -188,21 +191,26 @@ class SupervisorAgent:
                 required.append(agent)
                 steps.append({"agent": agent, "task": task, "tool": tool, "reason": reason})
 
+        analytics_intent = self._is_analytics_question(q, planning_entities)
         claim_intent = bool(planning_entities.get("claim_id")) or any(k in q for k in ["warranty", "claim", "reject", "resubmit", "coverage"])
         service_intent = bool(planning_entities.get("vin")) or any(k in q for k in ["vin", "fault", "symptom", "repair", "service history", "troubleshoot", "repeat repair", "same issue"])
-        parts_intent = bool(planning_entities.get("part_number")) or any(k in q for k in ["part", "stock", "inventory", "availability", "reman", "alternate", "backorder"])
+        # Keep deterministic Parts Agent for specific part/inventory lookups only.
+        # Broad analytical questions like "parts revenue by market" must go to Analytics Agent.
+        parts_intent = bool(planning_entities.get("part_number")) or any(k in q for k in ["stock", "inventory", "availability", "reman", "alternate", "backorder"])
         dealer_reasoning_intent = bool(planning_entities.get("dealer_id")) or any(k in q for k in ["360", "dealer", "underperform", "root cause", "rca", "bonus", "performance"])
         reasoning_intent = any(k in q for k in [
             "why", "reason", "root cause", "rca", "risk", "recommend", "next action", "summary", "360", "compare", "impact", "repeat", "same issue", "tell me if", "analysis", "looks like"
         ])
 
-        if claim_intent:
+        if analytics_intent:
+            add("analytics", "databricks_genie_analytics", "databricks_genie_mcp", "Analytical aggregation/ranking/trend question requires Databricks Genie.")
+        if claim_intent and not analytics_intent:
             add("warranty", "warranty_claim_lookup", "get_warranty_claim_details", "Claim or warranty evidence is required.")
-        if service_intent:
+        if service_intent and not analytics_intent:
             add("service", "vehicle_service_history_lookup", "get_vehicle_service_history", "VIN/service history evidence is required.")
-        if parts_intent:
+        if parts_intent and not analytics_intent:
             add("parts", "part_availability_lookup", "check_part_availability", "Parts availability evidence is required.")
-        if dealer_reasoning_intent and not (claim_intent or service_intent or parts_intent):
+        if dealer_reasoning_intent and not (claim_intent or service_intent or parts_intent or analytics_intent):
             add("deep_reasoning", "aftermarket_context_reasoning", "generate_aftermarket_context_pack", "Dealer/market/context reasoning is required.")
 
         # Multi-agent synthesis is required when more than one specialist evidence source
@@ -238,6 +246,8 @@ class SupervisorAgent:
     def route(self, question: str, entities: dict[str, str], last_agent: str | None = None) -> tuple[str, str]:
         """Legacy single-agent router retained for compatibility and fallback."""
         q = question.lower()
+        if self._is_analytics_question(q, entities):
+            return "analytics", "databricks_genie_analytics"
         if entities.get("claim_id") or any(k in q for k in ["warranty", "claim", "reject", "resubmit", "coverage"]):
             return "warranty", "warranty_claim_lookup"
         if entities.get("vin") or any(k in q for k in ["vin", "fault", "symptom", "repair", "service history", "troubleshoot"]):
@@ -249,6 +259,71 @@ class SupervisorAgent:
         if last_agent and any(k in q for k in ["why", "what about", "next", "explain", "more", "same", "show evidence"]):
             return last_agent, "multi_turn_follow_up"
         return "deep_reasoning", "general_aftermarket_reasoning"
+
+
+    def _is_analytics_question(self, q: str, entities: dict[str, str] | None = None) -> bool:
+        """Return True for aggregation/comparison/trend/ranking questions.
+
+        Analytics questions should be answered by Databricks Genie, not by
+        entity-specific operational MCP tools. Specific operational lookups still
+        remain with Warranty/Service/Parts/Deep Reasoning agents.
+
+        Important routing rule:
+        - "Is part P001 available in Germany?" => Parts Agent.
+        - "Which parts have the highest backorder quantity?" => Analytics Agent.
+        """
+        entities = entities or {}
+
+        comparison_or_aggregation_keywords = [
+            "top", "bottom", "highest", "lowest", "rank", "ranking", "leader", "leaders",
+            "compare", "comparison", "trend", "monthly", "over time", "month over month",
+            "by market", "by dealer", "by part", "by parts", "by part group", "by component",
+            "which parts", "which dealers", "which markets", "how many", "total", "average",
+            "sum", "count", "distribution", "breakdown",
+        ]
+
+        metric_keywords = [
+            "revenue", "sales", "units sold", "quantity", "qty", "available quantity",
+            "available qty", "backorder", "backorder quantity", "backorder qty", "stock",
+            "customer satisfaction", "csat", "dims", "bonus payout", "eligibility",
+            "warranty rejection rate", "claim rejection rate", "repair order", "vehicle off-road",
+            "cycle time", "kpi", "performance",
+        ]
+
+        subject_keywords = [
+            "market", "markets", "dealer", "dealers", "part", "parts", "part group",
+            "part groups", "component", "components", "kpi", "bonus", "warranty",
+            "inventory", "stock", "backorder", "revenue", "sales",
+        ]
+
+        def has_phrase(phrases: list[str]) -> bool:
+            for phrase in phrases:
+                # Single-word phrases should match as whole words, so "sum" does not
+                # accidentally match "summary" in dealer 360 questions. Multi-word
+                # phrases are searched as natural-language substrings.
+                if " " in phrase:
+                    if phrase in q:
+                        return True
+                elif re.search(rf"\b{re.escape(phrase)}\b", q):
+                    return True
+            return False
+
+        has_analytics_shape = has_phrase(comparison_or_aggregation_keywords)
+        has_metric_or_subject = has_phrase(metric_keywords) or has_phrase(subject_keywords)
+
+        if not (has_analytics_shape and has_metric_or_subject):
+            return False
+
+        # Specific operational entity lookups should stay with deterministic tools
+        # unless the question explicitly asks for comparison, trend, ranking, or aggregation.
+        has_specific_operational_entity = bool(
+            entities.get("claim_id") or entities.get("vin") or entities.get("part_number")
+        )
+        if has_specific_operational_entity:
+            explicit_analytics = has_phrase(comparison_or_aggregation_keywords)
+            return explicit_analytics
+
+        return True
 
     def _build_evidence_bundle(self, question: str, entities: dict[str, str], plan: dict[str, Any], agent_results: dict[str, Any]) -> dict[str, Any]:
         return safe_trace_payload({
@@ -297,9 +372,13 @@ class SupervisorAgent:
         enriched = dict(final_result)
         enriched["multi_agent_plan"] = safe_trace_payload(plan)
         enriched["agent_results"] = safe_trace_payload(agent_results)
+        final_rows = final_result.get("table", {}).get("rows", [])
+        # Preserve native single-agent tabular output exactly as returned by that agent.
+        # For multi-agent synthesis, combine a small evidence table from each specialist.
+        output_rows = final_rows if len(agent_results) <= 1 else (self._combined_rows(agent_results) or final_rows)
         enriched["table"] = {
-            "rows": self._combined_rows(agent_results) or final_result.get("table", {}).get("rows", []),
-            "sql": None,
+            "rows": output_rows,
+            "sql": final_result.get("table", {}).get("sql") if len(agent_results) <= 1 else None,
             "type": "multi_agent_evidence" if len(agent_results) > 1 else final_result.get("table", {}).get("type", "mcp_tool_result"),
         }
         enriched["suggested_questions"] = self._combined_suggested_questions(agent_results, final_result)
@@ -341,7 +420,7 @@ class SupervisorAgent:
     ) -> dict[str, Any]:
         evidence = agent_result.get("evidence", {})
         rows = agent_result.get("table", {}).get("rows") or []
-        chart = self._maybe_chart(agent_key, rows)
+        chart = agent_result.get("chart") or self._maybe_chart(agent_key, rows)
         trace = {
             "session_id": session_id,
             "selected_agent": agent_result.get("agent"),
@@ -367,6 +446,8 @@ class SupervisorAgent:
 
     def _maybe_chart(self, agent_key: str, rows: list[dict[str, Any]]) -> dict[str, Any] | None:
         if not rows:
+            return None
+        if agent_key == "analytics":
             return None
         if agent_key == "parts" and "available_qty" in rows[0]:
             return {"chart_type": "bar", "title": "Available Quantity by Dealer", "x": "dealer_id", "y": ["available_qty"], "series": None, "data": rows, "notes": "Inventory data returned by Parts Agent."}

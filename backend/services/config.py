@@ -25,6 +25,11 @@ class Settings:
     mcp_server_dir: Path = (BACKEND_ROOT / os.getenv("MCP_SERVER_DIR", "../mcp_server")).resolve()
     langsmith_tracing: bool = _bool("LANGSMITH_TRACING", False)
     langsmith_project: str | None = os.getenv("LANGSMITH_PROJECT")
+    # Databricks Genie MCP settings used by Analytics Agent.
+    # In local/demo mode set MOCK_MCP=true and these are not required.
+    genie_mcp_server_url: str | None = os.getenv("GENIE_MCP_SERVER_URL")
+    genie_mcp_tool_name: str | None = os.getenv("GENIE_MCP_TOOL_NAME")
+    databricks_profile: str | None = os.getenv("DATABRICKS_CONFIG_PROFILE") or os.getenv("DATABRICKS_PROFILE")
 
     @property
     def mcp_app_path(self) -> Path:

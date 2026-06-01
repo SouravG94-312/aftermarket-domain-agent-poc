@@ -8,6 +8,7 @@ from agents.warranty_agent import WarrantyAgent
 from agents.service_agent import ServiceAgent
 from agents.parts_agent import PartsAgent
 from agents.deep_reasoning_agent import DeepReasoningAgent
+from agents.analytics_agent import AnalyticsAgent
 from services.a2a import A2AMessage
 from services.config import settings
 from services.mcp_bridge import mcp_bridge
@@ -61,6 +62,7 @@ def create_app() -> Flask:
             "warranty": WarrantyAgent(),
             "service": ServiceAgent(),
             "parts": PartsAgent(),
+            "analytics": AnalyticsAgent(),
             "deep_reasoning": DeepReasoningAgent(),
         }
         agent = agent_map.get(agent_key)

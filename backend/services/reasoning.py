@@ -50,7 +50,21 @@ If evidence is incomplete, say what is missing."""
         if not evidence:
             return "No evidence was returned for this question. Please provide a claim ID, VIN, dealer ID, or part number."
 
-        if "agent_evidence" in evidence and isinstance(evidence["agent_evidence"], dict):
+        if evidence.get("source") in {"databricks_genie_mcp", "mock_databricks_genie_mcp"} or "genie_answer" in evidence:
+            answer = evidence.get("genie_answer") or evidence.get("answer") or "Databricks Genie returned analytical evidence."
+            rows = evidence.get("rows") or []
+            lines.append(f"\nAnswer: {answer}")
+            if rows:
+                lines.append(f"\nEvidence: Databricks Genie returned {len(rows)} analytical row(s) for this question.")
+                first = rows[0] if isinstance(rows[0], dict) else {}
+                if isinstance(first, dict):
+                    key_values = ", ".join([f"{k}: {v}" for k, v in list(first.items())[:5]])
+                    lines.append(f"Top result: {key_values}")
+            if evidence.get("chart"):
+                chart = evidence.get("chart") or {}
+                lines.append(f"\nVisualization: {chart.get('chart_type', 'chart')} - {chart.get('title', 'Databricks Genie chart')}.")
+            lines.append("\nRecommended next action: Use the returned table and chart to validate ranking/trend patterns, then drill down into dealer, market, or part-level drivers if needed.")
+        elif "agent_evidence" in evidence and isinstance(evidence["agent_evidence"], dict):
             lines.append("\nMulti-agent evidence summary:")
             agent_evidence = evidence.get("agent_evidence", {})
             warranty = agent_evidence.get("warranty", {}).get("evidence", {})
