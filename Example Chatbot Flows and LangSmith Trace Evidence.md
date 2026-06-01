@@ -52,41 +52,13 @@ Final Response Mapping
 UI Output
 ```
 
-#### Expected Agent Flow
-
-```text
-1. User → Supervisor Agent: received warranty claim question
-2. Supervisor Agent → Entity Extraction: extracted claim_id = WC1001
-3. Supervisor Agent → Warranty Agent: routed through A2A message
-4. Warranty Agent → MCP Server: called get_warranty_claim_details
-5. MCP Server → Databricks: queried warranty claim view
-6. Warranty Agent → Supervisor Agent: returned claim evidence
-7. Supervisor Agent → User: final explanation
-```
-
-#### Expected Output
-
-The chatbot should explain:
-
-- Current claim status
-- Rejection reason
-- Missing documents
-- Claim risk level
-- Recommended next action
-
-Example answer pattern:
-
-```text
-Claim WC1001 is currently rejected and marked high risk.
-The rejection reason is missing diagnostic log and late submission.
-The missing documents include diagnostic log and technician notes.
-Recommended next action is to collect the missing documents and resubmit with technical justification.
-```
+#### Agent Flow
+<img width="1195" height="520" alt="image" src="https://github.com/user-attachments/assets/6bc77891-c2a0-4d46-8df7-4406e1d519b4" />
 
 #### UI Output Screenshot
 
-Add screenshot here:
-<img width="1818" height="857" alt="image" src="https://github.com/user-attachments/assets/1401594f-f046-475b-b98c-2607642fb873" />
+<img width="1835" height="807" alt="image" src="https://github.com/user-attachments/assets/28aaffdf-add9-4201-acd0-696084a36038" />
+
 
 #### LangSmith Monitoring and Trace Screenshot
 
@@ -157,38 +129,13 @@ Reasoning over service evidence
 UI Output
 ```
 
-#### Expected Agent Flow
+#### Agent Flow
+<img width="1121" height="492" alt="image" src="https://github.com/user-attachments/assets/bc9a51d3-d130-46c4-b94a-d1b5333de3b8" />
 
-```text
-1. User → Supervisor Agent: received VIN repeat issue question
-2. Supervisor Agent → Entity Extraction: extracted vin = VINDEF000123
-3. Supervisor Agent → Service Agent: routed through A2A message
-4. Service Agent → MCP Server: called get_vehicle_service_history
-5. MCP Server → Databricks: queried service summary and repair order views
-6. Service Agent → Supervisor Agent: returned service evidence
-7. Supervisor Agent → User: repeat repair assessment
-```
-
-#### Expected Output
-
-The chatbot should explain:
-
-- Number of service events
-- Latest fault code or symptom
-- Whether the same fault/symptom appears repeatedly
-- Whether technical escalation is recommended
-- Technician-friendly next step
-
-Example answer pattern:
-
-```text
-VINDEF000123 shows multiple service events. Based on the available service history, there is a repeat issue indicator because similar symptoms or fault codes appear across prior repair orders.
-Recommended next step is to compare the latest repair event with prior repair orders and escalate to technical support if the same component or fault code is recurring.
-```
 
 #### UI Output Screenshot
 Scenario 2 - Service History UI Output
-<img width="1782" height="753" alt="image" src="https://github.com/user-attachments/assets/a0bff870-4528-4868-88cb-0ae4bc96c878" />
+<img width="1842" height="955" alt="image" src="https://github.com/user-attachments/assets/a40ab7ee-a077-4783-a4a8-4c356962a75d" />
 
 #### LangSmith Monitoring and Trace Screenshot
 
@@ -216,107 +163,7 @@ Scenario 2 - LangSmith Service Trace
 
 ---
 
-### Scenario 3: Parts Availability and Alternate Option Analysis
-
-#### Input Question
-
-```text
-Is part P001 available in Germany?
-```
-
-#### Expected Workflow
-
-```text
-User
-  ↓
-Supervisor Agent
-  ↓
-Entity Extraction
-  - part_number = P001
-  - market_code = DE
-  ↓
-Routing Decision
-  - selected_agent = Parts Agent
-  ↓
-A2A Message
-  - Supervisor Agent → Parts Agent
-  ↓
-Parts Agent
-  ↓
-MCP Tool Call
-  - check_part_availability({"part_number": "P001", "market_code": "DE", "limit": 10})
-  ↓
-Databricks SQL Warehouse
-  ↓
-vw_parts_availability_intelligence
-  ↓
-Parts Agent Response
-  ↓
-UI Output
-```
-
-#### Agent Flow
-
-```text
-1. User → Supervisor Agent: received part availability question
-2. Supervisor Agent → Entity Extraction: extracted part_number = P001 and market_code = DE
-3. Supervisor Agent → Parts Agent: routed through A2A message
-4. Parts Agent → MCP Server: called check_part_availability
-5. MCP Server → Databricks: queried parts availability view
-6. Parts Agent → Supervisor Agent: returned inventory evidence
-7. Supervisor Agent → User: availability and next action response
-```
-
-#### Expected Output
-
-The chatbot should explain:
-
-- Whether the part is available
-- Available quantity
-- Backorder quantity
-- Best dealer/location
-- Alternate part number
-- Reman part number
-- End-of-chain part number
-- Recommended action
-
-Example answer pattern:
-
-```text
-Part P001 is available in Germany. The best available dealer location is shown in the inventory result.
-If availability is limited, the dealer should check alternate, remanufactured, or end-of-chain replacement options before escalating.
-```
-
-#### UI Output Screenshot
-Scenario 3 - Parts Availability UI Output
-
-<img width="1727" height="730" alt="image" src="https://github.com/user-attachments/assets/0497b136-297d-413d-8cf8-0a1790d4a293" />
-
-#### LangSmith Monitoring and Trace Screenshot
-
-Expected LangSmith trace structure:
-```text
-chat_request
- └── supervisor_chat
-     ├── memory_get_or_create
-     ├── entity_extraction
-     ├── supervisor_route
-     ├── a2a_create_message
-     ├── parts_agent_run
-     │   └── mcp_tool_call
-     │       └── mcp_tool_call_async
-     ├── specialist_agent_build_response
-     ├── reason_over_evidence
-     ├── memory_add_message
-     ├── memory_update_entities
-     └── final_response_mapping
-```
-Scenario 3 - LangSmith Parts Trace
-<img width="1592" height="976" alt="image" src="https://github.com/user-attachments/assets/ae5a6589-3d77-4225-830e-c20b84242658" />
-
----
-
-### Scenario 4: Multi-Agent Claim + Service Repeat Repair Investigation
+### Scenario 3: Multi-Agent Claim + Service Repeat Repair Investigation
 
 #### Input Question
 
@@ -367,58 +214,14 @@ GPT-5.5 Reasoning / Fallback Reasoning
 Final Synthesized Answer
 ```
 
-#### Expected Agent Flow
+#### Actual Agent Flow
 
 ```text
-1. User → Supervisor Agent: received multi-evidence repeat repair question
-2. Supervisor Agent → Entity Extraction: extracted claim_id and vin
-3. Supervisor Agent → Multi-Agent Planner: created execution plan
-4. Supervisor Agent → Warranty Agent: requested claim evidence
-5. Warranty Agent → MCP Server: called get_warranty_claim_details
-6. Supervisor Agent → Service Agent: requested service history evidence
-7. Service Agent → MCP Server: called get_vehicle_service_history
-8. Supervisor Agent → Deep Reasoning Agent: sent combined evidence bundle
-9. Deep Reasoning Agent → GPT-5.5: reasoned over claim and service evidence
-10. Supervisor Agent → User: final repeat repair assessment
+<img width="996" height="712" alt="image" src="https://github.com/user-attachments/assets/252b84e0-c72f-42af-9461-bffe5bd14d7b" />
 ```
-
-#### Expected Output
-
-The chatbot should explain:
-
-- Claim status and risk
-- Relevant service history for the VIN
-- Whether the evidence indicates a repeat repair pattern
-- What evidence is missing, if any
-- Recommended next action for claim and service teams
-
- Actual Answer:
-
-```text
-Answer Yes — **Claim WC1001 for VINDEF000123 looks like a repeat repair issue**.
-The claim is currently Rejected and marked High risk, while the service history shows repeated Powertrain / Power loss events with the same fault code FC-PWR-101.
-
-Evidence **Claim status** - **Claim ID:** WC1001 - **VIN:** VINDEF000123 - **Status:** Rejected - **Dealer:** Berlin Trucks Center / DLR003 - **Risk level:** High - **Rejection reason:** Missing diagnostic log and late submission - **Missing documents:** Diagnostic log, technician notes
-Service history
-- Total service events: 4
-- Distinct fault codes: 2
-- Latest mileage: 132,400 km
-- Symptoms observed: Power loss, warning lamp
-- Repeat issue indicator: True
-
-Matching prior repair events
-- RO2001: FC-PWR-101 — Power loss — Powertrain — Priority 1
-- RO1984: FC-PWR-101 — Power loss — Powertrain — Priority 2
-
-Missing / incomplete evidence
-- Full repair order details are not provided, including repair dates, parts replaced, technician findings, and confirmation of whether prior repairs resolved the issue.
-
-Recommended Next Action Treat WC1001 as a **repeat repair escalation**. Collect the missing **diagnostic log** and **technician notes**, then resubmit with technical justification referencing prior repair orders **RO2001** and **RO1984** to support the repeat fault pattern.
-```
-
+---
 #### UI Output Screenshot - Scenario 4 - Multi-Agent Repeat Repair UI Output
-<img width="1811" height="843" alt="image" src="https://github.com/user-attachments/assets/52155796-fabc-4d39-91fb-0533a62897f0" />
-
+<img width="1831" height="1072" alt="image" src="https://github.com/user-attachments/assets/66ad409f-ff2d-4d49-bc5e-77db9ce32644" />
 
 #### LangSmith Monitoring and Trace Screenshot- Scenario 4 - LangSmith Multi-Agent Trace
 
