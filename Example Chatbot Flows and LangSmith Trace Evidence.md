@@ -1,8 +1,8 @@
-# Example Chatbot Flows and LangSmith Trace Evidence
+# Example Chatbot Agent Workflows and Trace Evidence
 
-This section can be used to document demo evidence for the chatbot, including input questions, workflow steps, UI output screenshots, and LangSmith tracing screenshots.
+This section captures representative chatbot conversations to demonstrate how the Supervisor Agent routes user queries to the right domain agents, invokes MCP/Genie tools, and synthesizes the final response.
 
-> Screenshot placeholders are intentionally included so you can add images after running each scenario in your local environment and LangSmith project.
+Each example includes the input question, agent workflow, output evidence, and LangSmith trace screenshots to show end-to-end observability of routing, tool calls, reasoning, and response generation.
 
 ---
 
@@ -62,28 +62,6 @@ UI Output
 
 #### LangSmith Monitoring and Trace Screenshot
 
-Expected LangSmith trace structure:
-
-```text
-chat_request
- └── supervisor_chat
-     ├── memory_get_or_create
-     ├── entity_extraction
-     ├── supervisor_route
-     ├── a2a_create_message
-     ├── warranty_agent_run
-     │   └── mcp_tool_call
-     │       └── mcp_tool_call_async
-     ├── specialist_agent_build_response
-     ├── reason_over_evidence
-     ├── memory_add_message
-     ├── memory_update_entities
-     └── final_response_mapping
-```
-
-Scenario 1 - LangSmith Warranty Trace: 
-
-
 <img width="1582" height="975" alt="image" src="https://github.com/user-attachments/assets/98a1d2da-fd08-4855-b843-3f023c1d9743" />
 
 ---
@@ -138,27 +116,6 @@ Scenario 2 - Service History UI Output
 <img width="1842" height="955" alt="image" src="https://github.com/user-attachments/assets/a40ab7ee-a077-4783-a4a8-4c356962a75d" />
 
 #### LangSmith Monitoring and Trace Screenshot
-
-Expected LangSmith trace structure:
-
-```text
-chat_request
- └── supervisor_chat
-     ├── memory_get_or_create
-     ├── entity_extraction
-     ├── supervisor_route
-     ├── a2a_create_message
-     ├── service_agent_run
-     │   └── mcp_tool_call
-     │       └── mcp_tool_call_async
-     ├── specialist_agent_build_response
-     ├── reason_over_evidence
-     ├── memory_add_message
-     ├── memory_update_entities
-     └── final_response_mapping
-```
-
-Scenario 2 - LangSmith Service Trace
 <img width="1586" height="936" alt="image" src="https://github.com/user-attachments/assets/85a029b8-b5c1-487e-84a5-af123874aa42" />
 
 ---
@@ -215,12 +172,10 @@ Final Synthesized Answer
 ```
 
 #### Actual Agent Flow
-
-```text
 <img width="996" height="712" alt="image" src="https://github.com/user-attachments/assets/252b84e0-c72f-42af-9461-bffe5bd14d7b" />
-```
+
 ---
-#### UI Output Screenshot - Scenario 4 - Multi-Agent Repeat Repair UI Output
+#### UI Output Screenshot
 <img width="1831" height="1072" alt="image" src="https://github.com/user-attachments/assets/66ad409f-ff2d-4d49-bc5e-77db9ce32644" />
 
 #### LangSmith Monitoring and Trace Screenshot- Scenario 4 - LangSmith Multi-Agent Trace
@@ -255,7 +210,7 @@ chat_request
 
 ---
 
-### Scenario 5: Dealer 360 Deep Reasoning and Follow-Up Memory
+### Scenario 4: Dealer 360 Deep Reasoning and Follow-Up Memory
 
 #### Input Question
 
@@ -293,85 +248,13 @@ GPT-5.5 Reasoning / Fallback Reasoning
 Final Dealer Summary
 ```
 
-#### Expected Agent Flow
+#### Agent Flow
+<img width="747" height="337" alt="image" src="https://github.com/user-attachments/assets/0f7dd168-d3ca-4aba-96d4-a5e2a6172000" />
 
-```text
-1. User → Supervisor Agent: received dealer 360 question
-2. Supervisor Agent → Entity Extraction: extracted dealer_id = DLR003
-3. Supervisor Agent → Deep Reasoning Agent: requested dealer context pack and synthesis
-4. Deep Reasoning Agent → MCP Server: called generate_aftermarket_context_pack
-5. MCP Server → Databricks: queried dealer 360, warranty, bonus, and sales views
-6. Deep Reasoning Agent → GPT-5.5: synthesized summary and risks
-7. Supervisor Agent → User: final dealer 360 summary
-```
-
-#### Expected Output
-
-The chatbot should explain:
-
-- Dealer performance summary
-- Warranty risk
-- Bonus eligibility status
-- Customer satisfaction or DIMS compliance risk
-- Top recommended actions
-
-Actual Answer:
-
-```text
-Answer
-Answer
-Dealer DLR003 is a Germany-based dealer with €594,000 revenue, but its current performance profile shows material risk in customer satisfaction, warranty quality, and bonus eligibility.
-
-Key 360 view:
-
-Market: Germany
-Revenue: €594,000
-Customer Satisfaction Score: 3.8
-Warranty Claim Rejection Rate: 31%
-Recent Warranty Performance: 22 claims in Apr-2026, with 7 rejected
-Bonus Eligibility: Not eligible
-Failed Bonus Hurdle: Customer Satisfaction
-Overall, DLR003 appears to be commercially active but operationally underperforming on quality-related KPIs. The most urgent issue is customer satisfaction, which is explicitly blocking bonus eligibility. The warranty rejection rate is also high and may be contributing to poor customer experience.
-
-Evidence
-
-Dealer 360 record:
-- Dealer ID: DLR003
-- Market: Germany
-- Revenue: €594,000
-- Customer satisfaction score: 3.8
-- Warranty claim rejection rate: 0.31
-- Eligible flag: false
-
-Recent warranty performance:
-- 2026-04: 22 total claims, 7 rejected
-
-Recent bonus record:
-- 2026-Q1: Not eligible
-- Failed hurdle: Customer Satisfaction
-
-Recommended focus areas from evidence:
-- Warranty rejection rate is high
-- Customer satisfaction is below threshold
-- Bonus eligibility is blocked or at risk
-
-Recommended Next Action
-Prioritize a corrective action plan for customer satisfaction recovery, since it is the confirmed bonus blocker. In parallel, review the 7 rejected warranty claims from Apr-2026 to identify whether rejections are driven by documentation errors, process gaps, or policy misunderstandings.
-```
-
-#### Follow-Up Input Question
-
-```text
-What are the top 3 actions for this dealer?
-```
-
-
-```
 
 #### UI Output Screenshot: Scenario 5 - Dealer 360 UI Output
 
-<img width="1716" height="762" alt="image" src="https://github.com/user-attachments/assets/0571e59a-fc97-4223-837d-8124dae46002" />
-
+<img width="773" height="1018" alt="image" src="https://github.com/user-attachments/assets/adee1fac-7458-439d-b63b-ba73ccbfc6f6" />
 
 #### LangSmith Monitoring and Trace Screenshot
 
@@ -396,9 +279,74 @@ chat_request
 ```
 <img width="1443" height="980" alt="image" src="https://github.com/user-attachments/assets/6f3dddea-660e-4a16-99e4-9f4ecbc67d7b" />
 
+---
+### Scenario 5: Testing A2A Protocol Test Scenarios
+
+#### Input Question
+**Warranty + Service Agent**
+
+```text
+
+Claim WC1001 is related to VINDEF000123. Check the claim status and service history, then tell me if this looks like a repeat repair issue.
+
+Expected flow:
+Supervisor → Warranty Agent
+Supervisor → Service Agent
+Supervisor → Final synthesized answer
+```
+
+#### Agent Flow
+<img width="931" height="660" alt="image" src="https://github.com/user-attachments/assets/be55c752-8752-496f-87ac-98278c71dc5b" />
+
+#### UI Output Screenshot
+<img width="1012" height="1013" alt="image" src="https://github.com/user-attachments/assets/43cd4030-a4b8-4671-bce4-4aa235308630" />
+
+---
+### Scenario 6: Testing Analytics & Deep Reasoning Agent 
+
+#### Input Question
+
+```text
+Show revenue comparison between Germany, France, Italy, Spain, and UK.
+```
+
+#### Agent Flow
+<img width="1150" height="513" alt="image" src="https://github.com/user-attachments/assets/25109cac-65ea-4376-8a10-2c39645b6314" />
 
 
+#### UI Output Screenshot
+<img width="1852" height="1035" alt="image" src="https://github.com/user-attachments/assets/97fb58f5-d8d7-4d9d-a6d0-2a1faaf4ba9e" />
 
+
+### Scenario 6.1: Testing Analytics & Deep Reasoning Agent 
+
+#### Input Question
+
+```text
+Which parts have the highest backorder quantity?
+```
+
+#### Agent Flow
+<img width="742" height="341" alt="image" src="https://github.com/user-attachments/assets/5fbba708-e75a-421c-a0df-4e50bddfc7a2" />
+
+
+#### UI Output Screenshot
+<img width="911" height="1022" alt="image" src="https://github.com/user-attachments/assets/77b56e57-14ff-4f43-9735-0a355aaf4b9d" />
+
+### Scenario 6.2: Testing Analytics & Deep Reasoning Agent 
+
+#### Input Question
+
+```text
+Show monthly sales trend for part group Brake.!
+```
+
+#### Agent Flow
+<img width="525" height="452" alt="image" src="https://github.com/user-attachments/assets/9c05f64b-3c38-4529-b732-2bf51a0392cb" />
+
+
+#### UI Output Screenshot
+<img width="857" height="1027" alt="image" src="https://github.com/user-attachments/assets/e34ae6ba-5efe-479c-9338-aaeb3df2a14d" />
 
 
 
